@@ -286,7 +286,7 @@ function renderFree() {
     ${sel.length === 0 ? '<p class="muted center">사람을 한 명 이상 선택하세요.</p>' : `
     <div class="legend"><span class="lg free"></span>모두 공강 <span class="lg busy"></span>수업 있음 (진할수록 많음)</div>
     ${gridShell(days, [lo, hi], (d) => perDay.find((x) => x.d === d).segs.map((g) => `
-      <button class="seg ${g.busy ? 'busy' : 'free'}" style="${posStyle(g.start, g.end, lo)}; --r:${g.busy / sel.length}" data-seg="${d}:${g.start}:${g.end}">
+      <button class="seg ${g.busy ? 'busy' : 'free'}" style="${posStyle(g.start, g.end, lo)}; --a:${(g.busy / sel.length * 0.7 + 0.08).toFixed(2)}" data-seg="${d}:${g.start}:${g.end}">
         ${g.busy === 0 && g.end - g.start >= 50 ? `<span>${fmt(g.start)}<br>~${fmt(g.end)}</span>` : g.busy ? `<span class="cnt">${g.busy}</span>` : ''}
       </button>`).join(''))}
     <section class="free-list">
@@ -356,10 +356,19 @@ function renderSettings() {
       <h3>도움말</h3>
       <button class="btn wide" data-act="help">시간표 파일 만드는 법</button>
       ${installPrompt ? '<button class="btn wide" data-act="install">홈 화면에 앱 설치</button>' : ''}
-      ${isStandalone() ? '' : '<p class="muted small">브라우저 메뉴의 <b>홈 화면에 추가</b>로 설치하면 인터넷 없이도 앱처럼 쓸 수 있어요.</p>'}
+      ${isStandalone() ? '' : installHint()}
     </section>
     ${store.getState().people.length ? '<button class="link danger" data-act="reset">모든 데이터 삭제</button>' : ''}
   `;
+}
+
+function installHint() {
+  if (isIOS) {
+    return `<p class="muted small"><b>Safari</b> 하단의 <b>공유 버튼 → 홈 화면에 추가</b>로 설치하면 인터넷 없이도 앱처럼 쓸 수 있어요.
+      카카오톡 등 앱 안의 브라우저에서는 설치가 안 되니 Safari로 열어 주세요.<br>
+      <b>주의:</b> iPhone은 Safari와 홈 화면 앱의 저장 공간이 분리돼 있어서, 설치한 뒤 <b>앱 안에서</b> 시간표를 불러와야 해요.</p>`;
+  }
+  return '<p class="muted small"><b>Chrome 메뉴(⋮) → 홈 화면에 추가(앱 설치)</b>로 설치하면 인터넷 없이도 앱처럼 쓸 수 있어요.</p>';
 }
 
 function showPersonMenu(id) {
@@ -489,12 +498,23 @@ fileJson.addEventListener('change', async () => {
   }
 });
 
-function exportBackup() {
-  const blob = new Blob([store.exportJson()], { type: 'application/json' });
-  const a = document.createElement('a');
+async function exportBackup() {
   const d = new Date();
+  const name = `schedule-mates-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+  const blob = new Blob([store.exportJson()], { type: 'application/json' });
+  // 모바일(특히 iOS 홈 화면 앱)은 다운로드보다 공유 시트로 파일 앱·카톡 등에 저장하는 편이 확실하다
+  const file = new File([blob], name, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: '시간표 메이트 백업' });
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `schedule-mates-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+  a.download = name;
   document.body.append(a);
   a.click();
   a.remove();
@@ -585,6 +605,7 @@ document.addEventListener('change', (e) => {
 
 // ---------- PWA ----------
 let installPrompt = null;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();

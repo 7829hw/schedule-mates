@@ -1,6 +1,6 @@
 // 앱 파일을 모두 캐시해 인터넷 없이 동작하게 한다.
 // 파일을 수정하면 VERSION을 올려야 사용자 기기에 새 버전이 반영된다.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `schedule-mates-${VERSION}`;
 const ASSETS = [
   './',
