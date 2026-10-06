@@ -28,6 +28,7 @@ python3 -m http.server 8000   # http://localhost:8000
 
 GitHub Pages 같은 정적 호스팅에 저장소 루트를 그대로 올리면 돼요. 모든 경로가 상대 경로라서 하위 경로에 올려도 동작해요.
 앱 파일을 수정하면 `sw.js`의 `VERSION`을 올려야 설치된 기기에 새 버전이 반영돼요.
+iOS는 홈 화면 아이콘을 파일 주소로는 가져오지 못해서 `index.html`의 `apple-touch-icon`과 `manifest.webmanifest`의 `icons`에 이미지를 base64(data URI)로 직접 넣어 두었어요. 아이콘을 바꾸면 `icons/`의 PNG로 두 곳의 값을 다시 만들고, 홈 화면 아이콘을 지웠다가 다시 추가해야 해요.
 
 ## 구조
 
